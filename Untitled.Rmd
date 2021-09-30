@@ -6,7 +6,7 @@ output: html_document
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, warning = F)
 library(tidyverse)
 df <- read_csv("data_cleaning_challenge.csv")
 ```
@@ -15,28 +15,42 @@ df <- read_csv("data_cleaning_challenge.csv")
 df <-
     df %>%
     select(-c(X10, X11))
-
-df %>%
+df <-
+    df %>%
     filter(!is.na(`Row Type`)) %>%
     mutate(nest = ifelse(str_detect(`Row Type`, "first name"), 1, 0),
            nest = cumsum(nest)) %>%
-    nest(-nest) %>%
+    nest(data = -nest) %>%
     mutate(data = map(
         data,
         .f = function(x) {
-            x[1,] %>%
+            x[1, ] %>%
                 select(1:3) %>%
                 rename(`first name` = `Row Type` ,
                        `last name` = `Iter Number`,
                        date = Power1) %>%
-                cbind(x[-c(1, 2),]) %>%
+                cbind(x[-c(1, 2), ]) %>%
                 mutate_at(c("first name", "last name", "date"),
-                          .funs = ~ str_trim(str_remove(.x, pattern = "^.+:"))) %>% 
+                          .funs = ~ str_trim(str_remove(.x, pattern = "^.+:"))) %>%
                 as_tibble()
         }
         
-    )) %>% 
-    unnest(data) %>% 
+    )) %>%
+    unnest(data) %>%
     rename(id = nest)
 ```
+
+## First few rows of the dataset
+```{r}
+df %>% 
+    filter(id <3)
+```
+
+```{r}
+# write_csv(df %>% filter(id <=10), "cleanDataset.csv")
+```
+
+
+
+
 
