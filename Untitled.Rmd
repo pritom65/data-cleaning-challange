@@ -1,0 +1,42 @@
+---
+title: "Untitled"
+author: "pritom"
+date: "9/30/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(tidyverse)
+df <- read_csv("data_cleaning_challenge.csv")
+```
+
+```{r}
+df <-
+    df %>%
+    select(-c(X10, X11))
+
+df %>%
+    filter(!is.na(`Row Type`)) %>%
+    mutate(nest = ifelse(str_detect(`Row Type`, "first name"), 1, 0),
+           nest = cumsum(nest)) %>%
+    nest(-nest) %>%
+    mutate(data = map(
+        data,
+        .f = function(x) {
+            x[1,] %>%
+                select(1:3) %>%
+                rename(`first name` = `Row Type` ,
+                       `last name` = `Iter Number`,
+                       date = Power1) %>%
+                cbind(x[-c(1, 2),]) %>%
+                mutate_at(c("first name", "last name", "date"),
+                          .funs = ~ str_trim(str_remove(.x, pattern = "^.+:"))) %>% 
+                as_tibble()
+        }
+        
+    )) %>% 
+    unnest(data) %>% 
+    rename(id = nest)
+```
+
